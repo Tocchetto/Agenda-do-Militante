@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -6,7 +5,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
-import 'dart:async'; // Importa o pacote de temporizador
+import 'dart:async';
 
 void main() {
   runApp(const MyApp());
@@ -21,31 +20,28 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late Future<List<Evento>> futureEvents;
-  bool _isUpdating = false; // Variável para rastrear se uma atualização está em andamento
+  bool _isUpdating = false;
 
   @override
   void initState() {
     super.initState();
-    futureEvents = fetchEvents(); // Inicializa a busca de eventos
+    futureEvents = fetchEvents();
   }
 
   void refreshEvents() {
     if (!_isUpdating) {
       setState(() {
-        futureEvents = fetchEvents(); // Atualiza os eventos
-        _isUpdating = true; // Define que a atualização está em andamento
+        futureEvents = fetchEvents();
+        _isUpdating = true;
       });
 
-      // Inicia um temporizador para permitir novas atualizações após 30 segundos
       Timer(const Duration(seconds: 30), () {
         setState(() {
-          _isUpdating = false; // Permite novas atualizações
+          _isUpdating = false;
         });
       });
     } else {
-      // "Finge" que está atualizando sem fazer uma nova requisição
       setState(() {
-        // Atualiza a UI para refletir a tentativa de atualização com um pequeno atraso
         futureEvents = Future.delayed(const Duration(seconds: 2), () => []);
       });
     }
@@ -58,9 +54,7 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Agenda do Militante',
-              style: TextStyle(color: Colors.white)
-          ),
+          title: const Text('Agenda do Militante', style: TextStyle(color: Colors.white)),
           backgroundColor: Colors.black,
         ),
         body: FutureBuilder<List<Evento>>(
@@ -79,11 +73,11 @@ class _MyAppState extends State<MyApp> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(DateFormat('dd/MM/yyyy').format(entry.key)), // Mostra a data
+                      Text(DateFormat('dd/MM/yyyy').format(entry.key)),
                       ...entry.value.map((evento) {
                         return ListTile(
-                            title: Text('${evento.titulo} - ${DateFormat.Hm().format(evento.data)}'),
-                            subtitle: Text(evento.descricao)
+                          title: Text('${evento.titulo} - ${DateFormat.Hm().format(evento.data)}'),
+                          subtitle: Text(evento.descricao),
                         );
                       }).toList(),
                     ],
@@ -94,7 +88,7 @@ class _MyAppState extends State<MyApp> {
           },
         ),
         floatingActionButton: FloatingActionButton(
-          onPressed: refreshEvents, // Chama o método de atualização
+          onPressed: refreshEvents,
           child: const Icon(Icons.refresh),
         ),
       ),
@@ -110,15 +104,18 @@ Future<List<Evento>> fetchEvents() async {
 
   if (response.statusCode == 200) {
     var data = json.decode(response.body);
-    var items = data['items'] as List; // Obtém a lista de eventos
+    var items = data['items'] as List;
     List<Evento> eventos = items.map((item) {
       return Evento.fromJson(item);
     }).toList();
 
-    // Filtrar eventos para mostrar apenas os que ocorrem no futuro e ordenar
     var agora = DateTime.now();
-    eventos = eventos.where((evento) => evento.data.isAfter(agora)).toList();
-    eventos.sort((a, b) => a.data.compareTo(b.data)); // Correção: Use 'sort' em vez de 'sorted'
+    var hojeInicio = DateTime(agora.year, agora.month, agora.day);
+    var hojeFim = hojeInicio.add(Duration(days: 1)).subtract(Duration(seconds: 1));
+
+    eventos = eventos.where((evento) =>
+    evento.data.isAfter(hojeInicio.subtract(Duration(days: 1))) && evento.data.isBefore(hojeFim.add(Duration(days: 1)))).toList();
+    eventos.sort((a, b) => a.data.compareTo(b.data));
 
     return eventos;
   } else {
@@ -129,7 +126,6 @@ Future<List<Evento>> fetchEvents() async {
 Map<DateTime, List<Evento>> agruparEventosPorData(List<Evento> eventos) {
   Map<DateTime, List<Evento>> eventosPorData = {};
   for (var evento in eventos) {
-    // Obter apenas a data, ignorando a hora
     var dataEvento = DateTime(evento.data.year, evento.data.month, evento.data.day);
     if (eventosPorData.containsKey(dataEvento)) {
       eventosPorData[dataEvento]!.add(evento);
@@ -138,7 +134,6 @@ Map<DateTime, List<Evento>> agruparEventosPorData(List<Evento> eventos) {
     }
   }
 
-  // Ordenar eventos dentro de cada data
   eventosPorData.forEach((data, eventosDoDia) {
     eventosDoDia.sort((a, b) => a.data.compareTo(b.data));
   });
