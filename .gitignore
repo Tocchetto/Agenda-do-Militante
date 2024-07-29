@@ -1,24 +1,72 @@
+# Project
 config/calendar_key.txt
 
-# Gradle files
-.gradle/
-build/
+# Flutter related files
+**/build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache
+.pub/
+.dart_tool/
+.vscode/
 
-# Local configuration file (sdk path, etc)
-local.properties
-
-# Log/OS Files
-*.log
-
-# Android Studio generated files and folders
-captures/
-.externalNativeBuild/
-.cxx/
+# Android related files
 *.apk
-output.json
+*.aar
+*.ap_
+*.hprof
+*.so
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+android/.gradle/
+android/app/build/
+android/local.properties
+android/.idea/
+android/captures/
+android/.cxx/
+android/externalNativeBuild/
+android/output.json
 
-# IntelliJ
+# Google Services (e.g. APIs or Firebase)
+android/app/google-services.json
+android/app/src/debug/google-services.json
+android/app/src/profile/google-services.json
+android/app/src/release/google-services.json
+
+# iOS related files
+ios/.generated/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/certain-useful-certs.txt
+ios/Flutter/flutter_assets/
+ios/Flutter/pod_helper.rb
+ios/.symlinks/
+ios/Pods/
+ios/Runner/GeneratedPluginRegistrant.*
+ios/Runner/Info.plist
+ios/Runner.xcworkspace/
+ios/ServiceDefinitions.json
+
+# Packages
+*.dylib
+*.so
+*.dll
+
+# Miscellaneous
+*.log
+*.lock
+*.swp
+*.swo
+*.DS_Store
+
+# Local IntelliJ configurations
 *.iml
+*.ipr
+*.iws
 .idea/
 misc.xml
 deploymentTargetDropDown.xml
@@ -28,8 +76,12 @@ render.experimental.xml
 *.jks
 *.keystore
 
-# Google Services (e.g. APIs or Firebase)
-google-services.json
+# Obsolete files
+**/.log
 
-# Android Profiling
-*.hprof
+# Original entries
+.gradle/
+build/
+local.properties
+captures/
+.externalNativeBuild/
