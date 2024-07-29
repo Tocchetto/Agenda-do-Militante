@@ -1,1 +1,0 @@
- C:\\Users\\felipe.soso\\Documents\\git\\Agenda-do-Militante\\.dart_tool\\flutter_build\\9412b9039de89cfcab98d07d2e4aefda\\native_assets.yaml: 

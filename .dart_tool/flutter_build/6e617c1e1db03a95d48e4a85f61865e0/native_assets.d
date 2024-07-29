@@ -1,1 +1,0 @@
- C:\\Users\\felipe.soso\\AndroidStudioProjects\\agenda_militante\\.dart_tool\\flutter_build\\6e617c1e1db03a95d48e4a85f61865e0\\native_assets.yaml: 
