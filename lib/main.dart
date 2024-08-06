@@ -6,9 +6,20 @@ import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'dart:async';
+import 'package:logging/logging.dart';
+
+final _logger = Logger('MyApp');
 
 void main() {
+  _setupLogging();
   runApp(const MyApp());
+}
+
+void _setupLogging() {
+  Logger.root.level = Level.ALL; // Loga tudo, do mais detalhado ao mais crítico
+  Logger.root.onRecord.listen((record) {
+    print('${record.level.name}: ${record.time}: ${record.message}');
+  });
 }
 
 class MyApp extends StatefulWidget {
@@ -90,7 +101,7 @@ class _MyAppState extends State<MyApp> {
                           title: Text('${evento.titulo} - ${DateFormat.Hm().format(evento.data)}'),
                           subtitle: Text(evento.descricao),
                         );
-                      }).toList(),
+                      }),
                     ],
                   );
                 }).toList(),
@@ -108,18 +119,19 @@ class _MyAppState extends State<MyApp> {
 }
 
 Future<List<Evento>> fetchEvents() async {
-  final calendarId = 'c3de1c8f61a43c212e13746e43f55c94e0a5311557d34eedcb3a7651226a7dc3@group.calendar.google.com';
+  const calendarId = 'c3de1c8f61a43c212e13746e43f55c94e0a5311557d34eedcb3a7651226a7dc3@group.calendar.google.com';
   final apiKey = await rootBundle.loadString('config/calendar_key.txt');
 
   // Obtém a data de ontem
   var agora = DateTime.now();
-  var ontem = DateTime(agora.year, agora.month, agora.day).subtract(Duration(days: 1));
+  var ontem = DateTime(agora.year, agora.month, agora.day).subtract(const Duration(days: 1));
 
   // Converte a data para o formato ISO 8601
   var timeMin = ontem.toUtc().toIso8601String();
 
   final url = Uri.parse('https://www.googleapis.com/calendar/v3/calendars/$calendarId/events?key=$apiKey&timeMin=$timeMin');
   final response = await http.get(url);
+  _logger.info('HTTP response status: ${response.statusCode}');
 
   if (response.statusCode == 200) {
     var data = json.decode(response.body);
