@@ -6,9 +6,20 @@ import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'dart:async';
+import 'package:logging/logging.dart';
+
+final _logger = Logger('MyApp');
 
 void main() {
+  _setupLogging();
   runApp(const MyApp());
+}
+
+void _setupLogging() {
+  Logger.root.level = Level.ALL; // Loga tudo, do mais detalhado ao mais crítico
+  Logger.root.onRecord.listen((record) {
+    print('${record.level.name}: ${record.time}: ${record.message}');
+  });
 }
 
 class MyApp extends StatefulWidget {
@@ -20,7 +31,9 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late Future<List<Evento>> futureEvents;
+  List<Evento> currentEvents = [];
   bool _isUpdating = false;
+  DateTime _lastUpdate = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void initState() {
@@ -29,20 +42,29 @@ class _MyAppState extends State<MyApp> {
   }
 
   void refreshEvents() {
-    if (!_isUpdating) {
+    final now = DateTime.now();
+    if (now.difference(_lastUpdate).inSeconds >= 30) {
       setState(() {
-        futureEvents = fetchEvents();
         _isUpdating = true;
-      });
-
-      Timer(const Duration(seconds: 30), () {
-        setState(() {
-          _isUpdating = false;
+        _lastUpdate = now;
+        futureEvents = fetchEvents().then((events) {
+          setState(() {
+            currentEvents = events;
+            _isUpdating = false;
+          });
+          return events;
         });
       });
     } else {
+      // Simula uma atualização mostrando o indicador de carregamento temporário
       setState(() {
-        futureEvents = Future.delayed(const Duration(seconds: 2), () => []);
+        _isUpdating = true;
+      });
+
+      Future.delayed(const Duration(seconds: 2), () {
+        setState(() {
+          _isUpdating = false;
+        });
       });
     }
   }
@@ -60,7 +82,7 @@ class _MyAppState extends State<MyApp> {
         body: FutureBuilder<List<Evento>>(
           future: futureEvents,
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+            if (_isUpdating || snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             } else if (snapshot.hasError) {
               return Center(child: Text('Erro: ${snapshot.error}'));
@@ -79,7 +101,7 @@ class _MyAppState extends State<MyApp> {
                           title: Text('${evento.titulo} - ${DateFormat.Hm().format(evento.data)}'),
                           subtitle: Text(evento.descricao),
                         );
-                      }).toList(),
+                      }),
                     ],
                   );
                 }).toList(),
@@ -97,10 +119,19 @@ class _MyAppState extends State<MyApp> {
 }
 
 Future<List<Evento>> fetchEvents() async {
-  final calendarId = 'c3de1c8f61a43c212e13746e43f55c94e0a5311557d34eedcb3a7651226a7dc3@group.calendar.google.com';
+  const calendarId = 'c3de1c8f61a43c212e13746e43f55c94e0a5311557d34eedcb3a7651226a7dc3@group.calendar.google.com';
   final apiKey = await rootBundle.loadString('config/calendar_key.txt');
-  final url = Uri.parse('https://www.googleapis.com/calendar/v3/calendars/$calendarId/events?key=$apiKey');
+
+  // Obtém a data de ontem
+  var agora = DateTime.now();
+  var ontem = DateTime(agora.year, agora.month, agora.day).subtract(const Duration(days: 1));
+
+  // Converte a data para o formato ISO 8601
+  var timeMin = ontem.toUtc().toIso8601String();
+
+  final url = Uri.parse('https://www.googleapis.com/calendar/v3/calendars/$calendarId/events?key=$apiKey&timeMin=$timeMin');
   final response = await http.get(url);
+  _logger.info('HTTP response status: ${response.statusCode}');
 
   if (response.statusCode == 200) {
     var data = json.decode(response.body);
@@ -109,12 +140,8 @@ Future<List<Evento>> fetchEvents() async {
       return Evento.fromJson(item);
     }).toList();
 
-    var agora = DateTime.now();
-    var hojeInicio = DateTime(agora.year, agora.month, agora.day);
-    var hojeFim = hojeInicio.add(Duration(days: 1)).subtract(Duration(seconds: 1));
-
-    eventos = eventos.where((evento) =>
-    evento.data.isAfter(hojeInicio.subtract(Duration(days: 1))) && evento.data.isBefore(hojeFim.add(Duration(days: 1)))).toList();
+    // Filtra eventos a partir de ontem
+    eventos = eventos.where((evento) => evento.data.isAfter(ontem)).toList();
     eventos.sort((a, b) => a.data.compareTo(b.data));
 
     return eventos;
